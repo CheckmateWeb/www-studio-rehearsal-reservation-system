@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Net Worth Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-top">
+                <h1>Net Worth</h1>
+
+                <button id="themeToggle" class="icon-btn" aria-label="Toggle theme" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="net-worth-display">
+                <span class="currency" id="currencySymbol">₱</span>
+                <span id="totalNetWorth">0.00</span>
+            </div>
+
+            <p class="subtitle">Total Balance Across All Accounts</p>
+
+            <div class="currency-picker-wrap">
+                <label for="currencySelect">Currency</label>
+                <select id="currencySelect" class="currency-select">
+                    <option value="PHP">PHP - Philippine Peso (₱)</option>
+                    <option value="USD">USD - US Dollar ($)</option>
+                    <option value="EUR">EUR - Euro (€)</option>
+                    <option value="GBP">GBP - British Pound (£)</option>
+                    <option value="JPY">JPY - Japanese Yen (¥)</option>
+                    <option value="KRW">KRW - Korean Won (₩)</option>
+                    <option value="SGD">SGD - Singapore Dollar (S$)</option>
+                    <option value="AUD">AUD - Australian Dollar (A$)</option>
+                    <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                </select>
+            </div>
+        </header>
+
+        <section class="accounts-section">
+            <div class="section-header">
+                <h2>Your Accounts</h2>
+
+                <button id="addAccountBtn" class="primary-btn" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" style="margin-right: 8px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Account
+                </button>
+            </div>
+
+            <div id="accountsList" class="accounts-list"></div>
+
+            <div id="emptyState" class="empty-state hidden">
+                <div class="empty-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path>
+                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path>
+                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>
+                    </svg>
+                </div>
+                <p>No accounts added yet.</p>
+                <p class="empty-subtitle">Start tracking your net worth by adding your first account.</p>
+            </div>
+        </section>
+
+        <section class="chart-section card">
+            <h2>Funds Distribution</h2>
+            <div class="distribution-bar" id="distributionBar"></div>
+            <div class="distribution-legend" id="distributionLegend"></div>
+        </section>
+
+        <section class="history-section card">
+            <div class="section-header">
+                <div>
+                    <h2>Net Worth History</h2>
+                    <p class="section-subtitle">Touch the chart to inspect each point</p>
+                </div>
+
+                <div class="history-header-actions">
+                    <div class="range-switcher">
+                        <button class="range-btn active" data-range="7D" type="button">7D</button>
+                        <button class="range-btn" data-range="1M" type="button">1M</button>
+                        <button class="range-btn" data-range="3M" type="button">3M</button>
+                        <button class="range-btn" data-range="ALL" type="button">All</button>
+                    </div>
+                    <span class="mini-label">Trend</span>
+                </div>
+            </div>
+
+            <div class="history-summary-row">
+                <div class="summary-chip">
+                    <span class="summary-chip-label">Change</span>
+                    <strong id="historyDeltaValue">₱0.00</strong>
+                </div>
+
+                <div class="summary-chip">
+                    <span class="summary-chip-label">Highest</span>
+                    <strong id="historyHighestValue">₱0.00</strong>
+                </div>
+
+                <div class="summary-chip">
+                    <span class="summary-chip-label">Snapshots</span>
+                    <strong id="historyPointsCount">0</strong>
+                </div>
+            </div>
+
+            <div class="graph-wrapper" id="historyChartWrap">
+                <svg id="historyChart" viewBox="0 0 600 260" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="lineFillGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#4da3ff" stop-opacity="0.36"></stop>
+                            <stop offset="100%" stop-color="#4da3ff" stop-opacity="0.02"></stop>
+                        </linearGradient>
+
+                        <linearGradient id="historyLineGradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#66b7ff"></stop>
+                            <stop offset="50%" stop-color="#4da3ff"></stop>
+                            <stop offset="100%" stop-color="#7fd2ff"></stop>
+                        </linearGradient>
+
+                        <filter id="historyLineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+                            <feMerge>
+                                <feMergeNode in="blur"></feMergeNode>
+                                <feMergeNode in="SourceGraphic"></feMergeNode>
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <g id="chartGrid"></g>
+                    <path id="historyAreaPath" class="history-area"></path>
+                    <path id="historyLinePath" class="history-line"></path>
+                    <g id="historyPoints"></g>
+
+                    <line id="historyCrosshair" class="chart-crosshair hidden" x1="0" y1="0" x2="0" y2="0"></line>
+                    <circle id="historyActivePoint" class="chart-active-point hidden" cx="0" cy="0" r="7"></circle>
+
+                    <rect id="historyHitbox" x="0" y="0" width="600" height="260" fill="transparent"></rect>
+                </svg>
+
+                <div id="historyTooltip" class="chart-tooltip hidden">
+                    <div class="chart-tooltip-date" id="tooltipDate">Apr 6</div>
+                    <div class="chart-tooltip-value" id="tooltipValue">₱0.00</div>
+                    <div class="chart-tooltip-change neutral" id="tooltipChange">Starting point</div>
+                </div>
+
+                <div id="historyEmpty" class="graph-empty hidden">
+                    No history yet. Add or edit accounts to generate your trend.
+                </div>
+            </div>
+
+            <div id="historyLabels" class="history-labels"></div>
+
+            <div class="history-editor">
+                <div class="history-editor-header">
+                    <h3>Manage History</h3>
+                    <button id="openHistoryModalBtn" class="primary-btn" type="button">Add History</button>
+                </div>
+                <div id="historyEntriesList" class="history-entries-list"></div>
+            </div>
+        </section>
+
+        <section class="market-section card">
+            <div class="section-header">
+                <div>
+                    <h2>Market Snapshot</h2>
+                    <p class="section-subtitle">Modern line-style cards with real API support</p>
+                </div>
+
+                <div class="market-controls">
+                    <button id="marketRefreshBtn" class="small-icon-btn" type="button" aria-label="Refresh market">↻</button>
+                    <button id="marketPrevBtn" class="small-icon-btn" type="button" aria-label="Previous market cards">‹</button>
+                    <button id="marketNextBtn" class="small-icon-btn" type="button" aria-label="Next market cards">›</button>
+                    <span class="mini-label" id="marketModeLabel">API Ready</span>
+                </div>
+            </div>
+
+            <div class="scroll-row-wrap">
+                <div class="scroll-fade left"></div>
+                <div class="scroll-fade right"></div>
+                <div class="scroll-row" id="marketCards"></div>
+            </div>
+        </section>
+
+        <section class="movers-section card">
+            <div class="section-header">
+                <div>
+                    <h2>Top Movers</h2>
+                    <p class="section-subtitle">Quick watchlist cards</p>
+                </div>
+                <span class="mini-label">Live</span>
+            </div>
+
+            <div class="scroll-row-wrap">
+                <div class="scroll-fade left"></div>
+                <div class="scroll-fade right"></div>
+                <div class="scroll-row movers-row" id="moversCards"></div>
+            </div>
+        </section>
+
+        <section class="news-section card">
+            <div class="section-header">
+                <div>
+                    <h2>Latest News</h2>
+                    <p class="section-subtitle">Tap a card to open the full summary</p>
+                </div>
+                <span class="mini-label">News</span>
+            </div>
+
+            <div id="newsList" class="news-list"></div>
+        </section>
+
+        <section class="insight-section card">
+            <div class="section-header">
+                <div>
+                    <h2>Market Insight</h2>
+                    <p class="section-subtitle">Simple summary for users</p>
+                </div>
+                <span class="mini-label">Insight</span>
+            </div>
+
+            <div id="marketInsightBox" class="insight-box"></div>
+        </section>
+    </div>
+
+    <div id="accountModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Account</h2>
+
+                <button id="closeModalBtn" class="icon-btn" type="button" aria-label="Close modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="accountForm" novalidate>
+                <input type="hidden" id="editAccountId" />
+
+                <div class="form-group">
+                    <label for="accountName">Account Name</label>
+                    <input type="text" id="accountName" placeholder="e.g. GCash" maxlength="30" required />
+                    <small class="input-hint">Maximum of 30 characters</small>
+                    <small class="error-message" id="nameError"></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountType">Account Type</label>
+                    <select id="accountType" required>
+                        <option value="bank">Bank</option>
+                        <option value="wallet">E-Wallet</option>
+                        <option value="cash">Cash</option>
+                        <option value="investment">Investment</option>
+                    </select>
+                    <small class="error-message"></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountBalance">Balance</label>
+                    <input type="text" id="accountBalance" placeholder="₱0.00" inputmode="decimal" maxlength="18" required />
+                    <small class="input-hint">Up to 12 whole digits and 2 decimal places</small>
+                    <small class="error-message" id="balanceError"></small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancelModalBtn" class="secondary-btn">Cancel</button>
+                    <button type="submit" class="primary-btn">Save Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="historyModalTitle">Add History Entry</h2>
+
+                <button id="closeHistoryModalBtn" class="icon-btn" type="button" aria-label="Close history modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="historyForm" novalidate>
+                <input type="hidden" id="editHistoryId" />
+
+                <div class="form-group">
+                    <label for="historyDate">Date</label>
+                    <input type="date" id="historyDate" required />
+                    <small class="error-message" id="historyDateError"></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="historyAmount">Amount</label>
+                    <input type="text" id="historyAmount" placeholder="₱0.00" inputmode="decimal" maxlength="18" required />
+                    <small class="input-hint">This updates the chart directly</small>
+                    <small class="error-message" id="historyAmountError"></small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancelHistoryModalBtn" class="secondary-btn">Cancel</button>
+                    <button type="submit" class="primary-btn">Save History</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="newsModal" class="modal hidden">
+        <div class="modal-content news-modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 id="newsModalTitle">News Title</h2>
+                    <p id="newsModalMeta" class="news-modal-meta">Source • Latest</p>
+                </div>
+
+                <button id="closeNewsModalBtn" class="icon-btn" type="button" aria-label="Close news modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="news-modal-body">
+                <p id="newsModalSummary" class="news-modal-summary"></p>
+            </div>
+
+            <div class="modal-actions news-modal-actions">
+                <button type="button" id="closeNewsModalBtn2" class="primary-btn news-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
