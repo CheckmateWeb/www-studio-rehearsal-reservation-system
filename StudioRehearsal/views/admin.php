@@ -311,7 +311,7 @@ if (!empty($roomCounts)) {
             });
         }
     </script>
-
+  
    <script>
     const roomLabels = <?= json_encode(array_keys($roomCounts)) ?>;
     const roomData = <?= json_encode(array_values($roomCounts)) ?>;
