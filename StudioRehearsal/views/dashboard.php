@@ -60,8 +60,8 @@ $reservations = $manager->getMyReservations();
                         <span class="mini-stat-value"><?= count($reservations) ?> active records</span>
                     </div>
                     <div class="mini-stat">
-                        <span class="mini-stat-label">Booking flow</span>
-                        <span class="mini-stat-value">Modal confirmations still enabled</span>
+                        <span class="mini-stat-label">Booking access</span>
+                        <span class="mini-stat-value">Reserve and manage your sessions here</span>
                     </div>
                 </div>
             </div>
