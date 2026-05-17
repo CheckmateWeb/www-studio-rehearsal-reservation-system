@@ -26,7 +26,17 @@ class userModel {
                   VALUES (:firstName, :lastName, :email, :password, :createdAt, :updatedAt)";
 
         $dateNow = date('Y-m-d H:i:s');
-        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        // Prefer Argon2id when available, otherwise fall back to bcrypt
+        $algorithm = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
+        $options = [];
+        if ($algorithm === PASSWORD_ARGON2ID) {
+            $options = [
+                'memory_cost' => 65536,
+                'time_cost' => 4,
+                'threads' => 2,
+            ];
+        }
+        $hashedPassword = password_hash($password, $algorithm, $options);
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':firstName', $firstName);
@@ -218,6 +228,19 @@ class userModel {
             // If column doesn't exist, just return true but don't update
             return true;
         }
+    }
+
+    public function cancelReservationForUser($reservationID, $userID): mixed {
+        $query = "DELETE FROM tbl_reservations_table
+                  WHERE reservation_id = :reservationID
+                    AND user_id = :userID";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':reservationID', $reservationID, PDO::PARAM_INT);
+        $stmt->bindParam(':userID', $userID, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->rowCount() > 0;
     }
 }
 ?>

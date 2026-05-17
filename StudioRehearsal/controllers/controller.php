@@ -157,6 +157,20 @@ if ($action === 'logout') {
     $respondText("success");
 }
 
+if ($action === 'cancelReservation') {
+    if (!isset($_SESSION['user_id'])) {
+        $respondText("Not logged in");
+    }
+
+    $reservationID = $postInt('reservationID');
+    if ($reservationID === false || $reservationID < 1) {
+        $respondText("Invalid reservation");
+    }
+
+    $manager->cancelMyReservation($reservationID);
+    exit();
+}
+
 if ($action === 'contact') {
     $firstName = $postString("fName");
     $lastName = $postString("lName");

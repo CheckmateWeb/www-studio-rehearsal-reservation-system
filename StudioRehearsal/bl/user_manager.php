@@ -71,6 +71,21 @@ class UserManager {
         }
     }
 
+    public function cancelMyReservation($reservationID) {
+        try {
+            if (!isset($_SESSION['user_id'])) {
+                echo "Not logged in";
+                return;
+            }
+
+            echo $this->userModel->cancelReservationForUser($reservationID, (int) $_SESSION['user_id'])
+                ? "Reservation cancelled successfully"
+                : "Reservation not found";
+        } catch (Exception $ex) {
+            echo $ex->getMessage();
+        }
+    }
+
     public function getUser() {
         return $this->userModel->readUser()->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -96,12 +111,28 @@ class UserManager {
 
         $isValidPassword = false;
         if ($user) {
+            // Prefer Argon2id when available, otherwise fall back to bcrypt
+            $algorithm = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
+            $options = [];
+            if ($algorithm === PASSWORD_ARGON2ID) {
+                $options = [
+                    'memory_cost' => 65536,
+                    'time_cost' => 4,
+                    'threads' => 2,
+                ];
+            }
+
             if (password_verify($password, $user['password'])) {
                 $isValidPassword = true;
+                // Rehash to stronger algorithm/options when necessary
+                if (password_needs_rehash($user['password'], $algorithm, $options)) {
+                    $newHash = password_hash($password, $algorithm, $options);
+                    $this->userModel->updateUserPassword($user['user_id'], $newHash);
+                }
             } elseif ($password === $user['password']) {
-                // Fallback for existing plaintext passwords; rehash on successful login.
+                // Fallback for existing plaintext passwords; hash with chosen algorithm
                 $isValidPassword = true;
-                $newHash = password_hash($password, PASSWORD_BCRYPT);
+                $newHash = password_hash($password, $algorithm, $options);
                 $this->userModel->updateUserPassword($user['user_id'], $newHash);
             }
         }

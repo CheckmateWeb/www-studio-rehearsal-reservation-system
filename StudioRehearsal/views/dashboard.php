@@ -171,6 +171,7 @@ $reservations = $manager->getMyReservations();
                                 <th scope="col">Room</th>
                                 <th scope="col">Date</th>
                                 <th scope="col">Total</th>
+                                <th scope="col">Actions</th>
                             </tr>
                         </thead>
 
@@ -181,11 +182,19 @@ $reservations = $manager->getMyReservations();
                                         <td><?= htmlspecialchars($r['studio_name']) ?></td>
                                         <td><?= date('F j, Y, g:i a', strtotime($r['reservation_date'])) ?></td>
                                         <td class="highlight-text">&#8369;<?= number_format($r['total_amount'], 2) ?></td>
+                                        <td class="actions-cell">
+                                            <button
+                                                type="button"
+                                                class="btn action-btn delete-btn"
+                                                onclick="cancelReservation('<?= htmlspecialchars($r['reservation_id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($r['studio_name'], ENT_QUOTES) ?>')">
+                                                Cancel
+                                            </button>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="3" class="empty-state">No reservations yet.</td>
+                                    <td colspan="4" class="empty-state">No reservations yet.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -212,6 +221,42 @@ $reservations = $manager->getMyReservations();
 </footer>
 
 <script src="../scripts/service.js"></script>
+<script>
+    function cancelReservation(reservationID, roomName) {
+        Swal.fire({
+            title: 'Cancel Reservation?',
+            text: 'This will cancel your reservation for ' + roomName + '.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, cancel it',
+            cancelButtonText: 'Keep it'
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $.ajax({
+                url: "../controllers/controller.php",
+                type: "POST",
+                data: {
+                    action: "cancelReservation",
+                    reservationID: reservationID
+                },
+                success: function(response) {
+                    if (isSuccessfulTextResponse(response, ["reservation cancelled successfully"])) {
+                        Swal.fire("Cancelled!", "Your reservation has been cancelled.", "success")
+                            .then(() => location.reload(true));
+                    } else {
+                        Swal.fire("Error", response || "Unable to cancel reservation", "error");
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire("Error", xhr.status + " - " + xhr.responseText, "error");
+                }
+            });
+        });
+    }
+</script>
 
 </body>
 </html>
