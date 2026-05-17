@@ -5,24 +5,54 @@ require_once __DIR__ . "/../model/databaseCon.php";
 require_once __DIR__ . '/../helper/send.php';
 
 $manager = new UserManager();
+$action = $_POST['action'] ?? '';
 
-if (isset($_POST['action']) && $_POST['action'] == 'login') {
+$postString = static function ($key, $default = '') {
+    return isset($_POST[$key]) ? trim((string) $_POST[$key]) : $default;
+};
+
+$postInt = static function ($key) {
+    return filter_var($_POST[$key] ?? null, FILTER_VALIDATE_INT);
+};
+
+$respondText = static function ($message) {
+    echo $message;
+    exit();
+};
+
+if ($action === 'login') {
     ob_clean();
-    $manager->loginUserFunc($_POST['email'], $_POST['password']);
+    header('Content-Type: application/json; charset=utf-8');
+
+    $email = filter_var($postString('email'), FILTER_VALIDATE_EMAIL);
+    $password = (string) ($_POST['password'] ?? '');
+
+    if (!$email || $password === '') {
+        echo json_encode([
+            "success" => false,
+            "message" => "Email and password are required"
+        ]);
+        exit();
+    }
+
+    $manager->loginUserFunc($email, $password);
     exit();
 }
 
-if (isset($_POST['action']) && $_POST['action'] == 'register') {
+if ($action === 'register') {
     ob_clean();
 
-    $f = trim($_POST['fName']);
-    $l = trim($_POST['lName']);
-    $e = trim($_POST['email']);
-    $p = $_POST['password'];
+    $f = $postString('fName');
+    $l = $postString('lName');
+    $e = filter_var($postString('email'), FILTER_VALIDATE_EMAIL);
+    $p = (string) ($_POST['password'] ?? '');
+
+    if ($f === '' || $l === '' || !$e || $p === '') {
+        $respondText("Invalid input");
+    }
 
     if ($manager->getUserByEmail($e)) {
-        echo "Email already exists";
-        exit;
+        $respondText("Email already exists");
     }
 
     $created = $manager->userModel->createUserFull($f, $l, $e, $p);
@@ -60,36 +90,37 @@ if (isset($_POST['action']) && $_POST['action'] == 'register') {
 
                 <div style="padding:18px 30px;background:#111827;text-align:center;">
                     <p style="margin:0;font-size:13px;color:#d1d5db;">
-                        © 2026 Studio Rehearsal. All rights reserved.
+                        &copy; 2026 Studio Rehearsal. All rights reserved.
                     </p>
                 </div>
             </div>
         </div>';
 
-        $mailResult = sendEmail(
+        sendEmail(
             "adventureprofile2@gmail.com",
             "Admin",
             "New User Registration",
             $body
         );
 
-        echo "success";
-    } else {
-        echo "error";
+        $respondText("success");
     }
 
-    exit();
+    $respondText("error");
 }
 
-if (isset($_POST['action']) && $_POST['action'] == 'reserve') {
+if ($action === 'reserve') {
     if (!isset($_SESSION['user_id'])) {
-        echo "Not logged in";
-        exit;
+        $respondText("Not logged in");
     }
 
-    $user_id = $_SESSION['user_id'];
-    $studio_id = $_POST['studio_id'];
-    $price = $_POST['price'];
+    $user_id = (int) $_SESSION['user_id'];
+    $studio_id = $postInt('studio_id');
+    $price = filter_var($_POST['price'] ?? null, FILTER_VALIDATE_FLOAT);
+
+    if ($studio_id === false || $studio_id < 1 || $price === false || $price < 0) {
+        $respondText("Invalid reservation details");
+    }
 
     $dateNow = date('Y-m-d H:i:s');
     $start_time = $dateNow;
@@ -97,6 +128,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'reserve') {
 
     $database = new DatabaseCon();
     $conn = $database->connectDB();
+
+    if (!$conn) {
+        $respondText("Database connection unavailable");
+    }
 
     $query = "INSERT INTO tbl_reservations_table
               (user_id, studio_id, reservation_date, start_time, end_time, total_amount, createdAt, updatedAt)
@@ -113,29 +148,25 @@ if (isset($_POST['action']) && $_POST['action'] == 'reserve') {
     $stmt->bindParam(':createdAt', $dateNow);
     $stmt->bindParam(':updatedAt', $dateNow);
 
-    echo $stmt->execute() ? "success" : "error";
-    exit();
+    $respondText($stmt->execute() ? "success" : "error");
 }
 
-if (isset($_POST['action']) && $_POST['action'] == 'logout') {
+if ($action === 'logout') {
     session_unset();
     session_destroy();
-    echo "success";
-    exit();
+    $respondText("success");
 }
 
-if (isset($_POST['action']) && $_POST['action'] == 'contact') {
-
-    $firstName = isset($_POST["fName"]) ? trim($_POST["fName"]) : "";
-    $lastName = isset($_POST["lName"]) ? trim($_POST["lName"]) : "";
+if ($action === 'contact') {
+    $firstName = $postString("fName");
+    $lastName = $postString("lName");
     $fullName = trim($firstName . " " . $lastName);
 
-    $email = isset($_POST["email"]) ? filter_var(trim($_POST["email"]), FILTER_VALIDATE_EMAIL) : false;
+    $email = filter_var($postString("email"), FILTER_VALIDATE_EMAIL);
     $message = isset($_POST["message"]) ? htmlspecialchars(trim($_POST["message"])) : "";
 
     if ($fullName === "" || !$email || $message === "") {
-        echo "Invalid input";
-        exit;
+        $respondText("Invalid input");
     }
 
     $body = '
@@ -173,7 +204,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'contact') {
 
             <div style="padding:18px 30px;background:#111827;text-align:center;">
                 <p style="margin:0;font-size:13px;color:#d1d5db;">
-                    © 2026 Studio Rehearsal. All rights reserved.
+                    &copy; 2026 Studio Rehearsal. All rights reserved.
                 </p>
             </div>
         </div>
@@ -187,46 +218,71 @@ if (isset($_POST['action']) && $_POST['action'] == 'contact') {
     );
 
     if ($result === true) {
-        echo "success";
-    } else {
-        echo "Failed: " . $result;
+        $respondText("success");
     }
 
-    exit();
+    $respondText("Unable to send message right now");
 }
 
 if (isset($_POST["fName"], $_POST["lName"]) && !isset($_POST["uID"])) {
-    $manager->addUserFunc($_POST["fName"], $_POST["lName"]);
+    $manager->addUserFunc($postString("fName"), $postString("lName"));
     exit;
-}
-else if (isset($_POST["fName"], $_POST["lName"], $_POST["uID"], $_POST["email"])) {
+} elseif (isset($_POST["fName"], $_POST["lName"], $_POST["uID"], $_POST["email"])) {
+    $userId = $postInt("uID");
+    $email = filter_var($postString("email"), FILTER_VALIDATE_EMAIL);
+
+    if ($userId === false || !$email) {
+        $respondText("Invalid user details");
+    }
+
+    if ($manager->emailExistsForOtherUser($userId, $email)) {
+        $respondText("Email already exists");
+    }
+
     $manager->updateUserFunc(
-        $_POST["uID"],
-        $_POST["fName"],
-        $_POST["lName"],
-        $_POST["email"]
+        $userId,
+        $postString("fName"),
+        $postString("lName"),
+        $email
     );
     exit;
-}
-else if (isset($_POST["fName"], $_POST["lName"], $_POST["uID"])) {
-    $manager->updateUserFunc($_POST["uID"], $_POST["fName"], $_POST["lName"], "");
+} elseif (isset($_POST["fName"], $_POST["lName"], $_POST["uID"])) {
+    $userId = $postInt("uID");
+    if ($userId === false) {
+        $respondText("Invalid user details");
+    }
+
+    $manager->updateUserFunc($userId, $postString("fName"), $postString("lName"), "");
     exit;
-}
-else if (isset($_POST["dID"])) {
-    $manager->deleteUserFunc($_POST["dID"]);
+} elseif (isset($_POST["dID"])) {
+    $userId = $postInt("dID");
+    if ($userId === false) {
+        $respondText("Invalid user");
+    }
+
+    $manager->deleteUserFunc($userId);
     exit;
 }
 
-if (isset($_POST['action']) && $_POST['action'] == 'updateReservationStatus') {
-    $reservationID = $_POST['reservationID'];
-    $statusID = $_POST['statusID'];
-    
+if ($action === 'updateReservationStatus') {
+    $reservationID = $postInt('reservationID');
+    $statusID = $postInt('statusID');
+
+    if ($reservationID === false || $statusID === false) {
+        $respondText("Invalid reservation status");
+    }
+
     $manager->updateReservationStatus($reservationID, $statusID);
     exit;
 }
 
-if (isset($_POST['userID']) && isset($_POST['action']) && $_POST['action'] == 'deleteUser') {
-    $manager->deleteUserFunc($_POST['userID']);
+if (isset($_POST['userID']) && $action === 'deleteUser') {
+    $userId = $postInt('userID');
+    if ($userId === false) {
+        $respondText("Invalid user");
+    }
+
+    $manager->deleteUserFunc($userId);
     exit;
 }
 ?>

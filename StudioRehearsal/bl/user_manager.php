@@ -3,6 +3,7 @@ require_once __DIR__ . "/../model/databaseCon.php";
 require_once __DIR__ . "/../model/userModel.php";
 
 class UserManager {
+    private const ADMIN_EMAIL = "MarivelesAdmin@gmail.com";
     public $userModel;
 
     public function __construct() {
@@ -78,6 +79,14 @@ class UserManager {
         return $this->userModel->getUserByEmail($email);
     }
 
+    public function emailExistsForOtherUser($userID, $email) {
+        return $this->userModel->emailExistsForOtherUser($userID, $email);
+    }
+
+    public function isAdminEmail($email) {
+        return strcasecmp((string) $email, self::ADMIN_EMAIL) === 0;
+    }
+
     public function loginUserFunc($email, $password) {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
@@ -85,14 +94,26 @@ class UserManager {
 
         $user = $this->userModel->getUserByEmail($email);
 
-        if ($user && $password == $user['password']) {
+        $isValidPassword = false;
+        if ($user) {
+            if (password_verify($password, $user['password'])) {
+                $isValidPassword = true;
+            } elseif ($password === $user['password']) {
+                // Fallback for existing plaintext passwords; rehash on successful login.
+                $isValidPassword = true;
+                $newHash = password_hash($password, PASSWORD_BCRYPT);
+                $this->userModel->updateUserPassword($user['user_id'], $newHash);
+            }
+        }
+
+        if ($user && $isValidPassword) {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['name'] = $user['firstName'];
 
             echo json_encode([
                 "success" => true,
-                "role" => ($user['email'] === "MarivelesAdmin@gmail.com" ? "admin" : "user")
+                "role" => ($this->isAdminEmail($user['email']) ? "admin" : "user")
             ]);
         } else {
             echo json_encode([

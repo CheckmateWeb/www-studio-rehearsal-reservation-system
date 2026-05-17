@@ -26,14 +26,31 @@ class userModel {
                   VALUES (:firstName, :lastName, :email, :password, :createdAt, :updatedAt)";
 
         $dateNow = date('Y-m-d H:i:s');
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':firstName', $firstName);
         $stmt->bindParam(':lastName', $lastName);
         $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $password);
+        $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':createdAt', $dateNow);
         $stmt->bindParam(':updatedAt', $dateNow);
+
+        return $stmt->execute();
+    }
+
+    public function updateUserPassword($userID, $hashedPassword): mixed {
+        $query = "UPDATE tbl_users
+                  SET password = :password,
+                      updatedAt = :updatedAt
+                  WHERE user_id = :userID";
+
+        $dateNow = date('Y-m-d H:i:s');
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':updatedAt', $dateNow);
+        $stmt->bindParam(':userID', $userID);
 
         return $stmt->execute();
     }
@@ -85,13 +102,24 @@ class userModel {
         $stmt = $this->conn->prepare("SELECT * FROM tbl_users WHERE email = :email");
         $stmt->bindParam(':email', $email);
         $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch();
+    }
+
+    public function emailExistsForOtherUser($userID, $email) {
+        $stmt = $this->conn->prepare(
+            "SELECT user_id FROM tbl_users WHERE email = :email AND user_id != :userID LIMIT 1"
+        );
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':userID', $userID);
+        $stmt->execute();
+
+        return (bool) $stmt->fetch();
     }
 
     public function readAllUsers() {
         $stmt = $this->conn->prepare("SELECT user_id, firstName, lastName, email, createdAt, updatedAt FROM tbl_users");
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll();
     }
 
     public function readReservations($userId) {
@@ -122,7 +150,7 @@ class userModel {
             ':userId' => $userId
         ]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll();
     }
 
     public function getAllReservations() {
@@ -160,7 +188,7 @@ class userModel {
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll();
     }
 
     public function getAllStatuses() {

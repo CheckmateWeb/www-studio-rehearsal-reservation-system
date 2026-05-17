@@ -30,16 +30,20 @@ function addFunc() {
             lName: lastName
         },
         success: function (returnedData) {
-            Swal.fire({
-                title: "Good job!",
-                text: "Successfully added a user named " + firstName + " " + lastName,
-                icon: "success",
-                confirmButtonText: "OK"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    location.reload(true);
-                }
-            });
+            if (isSuccessfulTextResponse(returnedData, ["user has been added"])) {
+                Swal.fire({
+                    title: "Good job!",
+                    text: "Successfully added a user named " + firstName + " " + lastName,
+                    icon: "success",
+                    confirmButtonText: "OK"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload(true);
+                    }
+                });
+            } else {
+                Swal.fire("Error", returnedData, "error");
+            }
         },
         error: function (xhr) {
             Swal.fire("Error", xhr.status + " : " + xhr.responseText, "error");
@@ -80,16 +84,20 @@ function updateFunc(userID) {
             uID: userID
         },
         success: function (returnedData) {
-            Swal.fire({
-                title: "Updated!",
-                text: "Successfully updated a user to " + firstName + " " + lastName,
-                icon: "success",
-                confirmButtonText: "OK"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    location.reload(true);
-                }
-            });
+            if (isSuccessfulTextResponse(returnedData, ["user updated successfully"])) {
+                Swal.fire({
+                    title: "Updated!",
+                    text: "Successfully updated a user to " + firstName + " " + lastName,
+                    icon: "success",
+                    confirmButtonText: "OK"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload(true);
+                    }
+                });
+            } else {
+                Swal.fire("Error", returnedData, "error");
+            }
         },
         error: function (xhr) {
             Swal.fire("Error", xhr.status + " : " + xhr.responseText, "error");
@@ -114,16 +122,20 @@ function deleteFunc(userID) {
                     dID: userID
                 },
                 success: function (returnedData) {
-                    Swal.fire({
-                        title: "Deleted!",
-                        text: returnedData,
-                        icon: "success",
-                        confirmButtonText: "OK"
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            location.reload(true);
-                        }
-                    });
+                    if (isSuccessfulTextResponse(returnedData, ["user deleted successfully"])) {
+                        Swal.fire({
+                            title: "Deleted!",
+                            text: returnedData,
+                            icon: "success",
+                            confirmButtonText: "OK"
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                location.reload(true);
+                            }
+                        });
+                    } else {
+                        Swal.fire("Error", returnedData, "error");
+                    }
                 },
                 error: function (xhr) {
                     Swal.fire("Error", xhr.status + " : " + xhr.responseText, "error");
@@ -145,6 +157,58 @@ function redirectFunc(redirectID) {
     }
 }
 
+function validateNamePair(firstName, lastName) {
+    if (!firstName || !lastName) {
+        return "First name and last name are required.";
+    }
+
+    if (firstName.length < 2 || lastName.length < 2) {
+        return "First name and last name must be at least 2 characters.";
+    }
+
+    if (firstName.length > 20 || lastName.length > 20) {
+        return "First name and last name must not exceed 20 characters.";
+    }
+
+    if (!/^[a-zA-Z\s]+$/.test(firstName) || !/^[a-zA-Z\s]+$/.test(lastName)) {
+        return "First name and last name should only contain letters and spaces.";
+    }
+
+    return "";
+}
+
+function validateEmailAddress(email) {
+    if (email.length < 5 || email.length > 50) {
+        return "Email must be 5 to 50 characters.";
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+        return "Invalid email format.";
+    }
+
+    return "";
+}
+
+function isSuccessfulTextResponse(responseText, allowedValues) {
+    var normalized = (responseText || "").toString().trim().toLowerCase();
+    return allowedValues.indexOf(normalized) !== -1;
+}
+
+function setButtonLoading(button, loading, loadingText) {
+    var $button = $(button);
+    if (!$button.length) {
+        return;
+    }
+
+    if (loading) {
+        $button.data('original-text', $button.text());
+        $button.prop('disabled', true).addClass('loading').text(loadingText);
+    } else {
+        var originalText = $button.data('original-text') || loadingText;
+        $button.prop('disabled', false).removeClass('loading').text(originalText);
+    }
+}
+
 function loginFunc() {
     var email = document.getElementById("email").value.trim();
     var password = document.getElementById("password").value;
@@ -159,15 +223,14 @@ function loginFunc() {
         return;
     }
 
-    if (email.length > 50) {
-        Swal.fire("Invalid Input", "Email must not exceed 50 characters.", "error");
+    var emailError = validateEmailAddress(email);
+    if (emailError) {
+        Swal.fire("Invalid Input", emailError, "error");
         return;
     }
 
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-        Swal.fire("Invalid Input", "Invalid email format.", "error");
-        return;
-    }
+    var $submitButton = $('#loginForm button[type="submit"]');
+    setButtonLoading($submitButton, true, "ENTERING...");
 
     $.ajax({
         url: "../controllers/controller.php",
@@ -205,6 +268,9 @@ function loginFunc() {
         },
         error: function (xhr) {
             Swal.fire("Error", xhr.status + " - " + xhr.responseText, "error");
+        },
+        complete: function () {
+            setButtonLoading($submitButton, false, "ENTER STUDIO");
         }
     });
 }
@@ -218,28 +284,15 @@ function registerFunc(form) {
     var formData = $(form).serialize();
 
     // ===== YOUR STYLE VALIDATION =====
-    if (firstName.length < 2 || firstName.length > 20) {
-        Swal.fire("Invalid Input", "First name must be 2 to 20 characters.", "error");
+    var nameError = validateNamePair(firstName, lastName);
+    if (nameError) {
+        Swal.fire("Invalid Input", nameError, "error");
         return;
     }
 
-    if (lastName.length < 2 || lastName.length > 20) {
-        Swal.fire("Invalid Input", "Last name must be 2 to 20 characters.", "error");
-        return;
-    }
-
-    if (!/^[a-zA-Z\s]+$/.test(firstName) || !/^[a-zA-Z\s]+$/.test(lastName)) {
-        Swal.fire("Invalid Input", "Names should contain letters only.", "error");
-        return;
-    }
-
-    if (email.length < 5 || email.length > 50) {
-        Swal.fire("Invalid Input", "Email must be 5 to 50 characters.", "error");
-        return;
-    }
-
-    if (!email.includes("@") || !email.includes(".")) {
-        Swal.fire("Invalid Input", "Invalid email format.", "error");
+    var emailError = validateEmailAddress(email);
+    if (emailError) {
+        Swal.fire("Invalid Input", emailError, "error");
         return;
     }
 
@@ -249,12 +302,15 @@ function registerFunc(form) {
     }
 
     // ===== AJAX =====
+    var $submitButton = $(form).find('button[type="submit"]');
+    setButtonLoading($submitButton, true, "CREATING...");
+
     $.ajax({
         type: "POST",
         url: "../controllers/controller.php",
         data: formData + "&action=register",
         success: function(response) {
-            if (response.trim() == "success") {
+            if (isSuccessfulTextResponse(response, ["success"])) {
                 Swal.fire("Success!", "Account created!", "success")
                 .then(() => window.location.href = "login.php");
             } else {
@@ -263,6 +319,9 @@ function registerFunc(form) {
         },
         error: function(xhr) {
             Swal.fire("Error", xhr.status + " - " + xhr.responseText, "error");
+        },
+        complete: function() {
+            setButtonLoading($submitButton, false, "CREATE ACCOUNT");
         }
     });
 }
@@ -286,7 +345,7 @@ function reserveRoom(studio_id, studio_name, price) {
                     price: price
                 },
                 success: function(response) {
-                    if (response.trim() === "success") {
+                    if (isSuccessfulTextResponse(response, ["success"])) {
                         Swal.fire({
                             title: "Reserved!",
                             text: studio_name + " has been reserved successfully.",
@@ -386,33 +445,15 @@ function openUpdateModal(userID, firstName, lastName, email) {
             const lName = document.getElementById("swal-lname").value.trim();
             const emailVal = document.getElementById("swal-email").value.trim();
 
-            if (!fName || !lName || !emailVal) {
-                Swal.showValidationMessage("All fields are required");
+            var nameError = validateNamePair(fName, lName);
+            if (nameError) {
+                Swal.showValidationMessage(nameError);
                 return false;
             }
 
-            if (fName.length < 2 || lName.length < 2) {
-                Swal.showValidationMessage("First name and last name must be at least 2 characters.");
-                return false;
-            }
-
-            if (fName.length > 20 || lName.length > 20) {
-                Swal.showValidationMessage("First name and last name must not exceed 20 characters.");
-                return false;
-            }
-
-            if (!/^[a-zA-Z\s]+$/.test(fName) || !/^[a-zA-Z\s]+$/.test(lName)) {
-                Swal.showValidationMessage("First name and last name should only contain letters and spaces.");
-                return false;
-            }
-
-            if (emailVal.length > 50) {
-                Swal.showValidationMessage("Email must not exceed 50 characters.");
-                return false;
-            }
-
-            if (!/^\S+@\S+\.\S+$/.test(emailVal)) {
-                Swal.showValidationMessage("Invalid email format.");
+            var emailError = validateEmailAddress(emailVal);
+            if (emailError) {
+                Swal.showValidationMessage(emailError);
                 return false;
             }
 
@@ -434,8 +475,12 @@ function openUpdateModal(userID, firstName, lastName, email) {
                     email: result.value.email
                 },
                 success: function(response) {
-                    Swal.fire("Updated!", response, "success")
-                    .then(() => location.reload(true));
+                    if (isSuccessfulTextResponse(response, ["user updated successfully"])) {
+                        Swal.fire("Updated!", response, "success")
+                        .then(() => location.reload(true));
+                    } else {
+                        Swal.fire("Error", response, "error");
+                    }
                 },
                 error: function(xhr) {
                     Swal.fire("Error", xhr.responseText, "error");
