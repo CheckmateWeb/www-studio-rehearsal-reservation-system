@@ -20,6 +20,26 @@ $respondText = static function ($message) {
     exit();
 };
 
+$isValidRegistrationPassword = static function ($password) {
+    if (!is_string($password)) {
+        return false;
+    }
+
+    if (strlen($password) < 8 || strlen($password) > 64) {
+        return false;
+    }
+
+    if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/\d/', $password)) {
+        return false;
+    }
+
+    if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        return false;
+    }
+
+    return true;
+};
+
 if ($action === 'login') {
     ob_clean();
     header('Content-Type: application/json; charset=utf-8');
@@ -49,6 +69,10 @@ if ($action === 'register') {
 
     if ($f === '' || $l === '' || !$e || $p === '') {
         $respondText("Invalid input");
+    }
+
+    if (!$isValidRegistrationPassword($p)) {
+        $respondText("Password must be 8 to 64 characters and include letters, numbers, and at least one special character.");
     }
 
     if ($manager->getUserByEmail($e)) {

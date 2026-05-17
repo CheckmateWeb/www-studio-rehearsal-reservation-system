@@ -189,6 +189,32 @@ function validateEmailAddress(email) {
     return "";
 }
 
+function getPasswordChecklist(password) {
+    return {
+        hasMinimumLength: password.length >= 8,
+        hasLetterAndNumber: /[A-Za-z]/.test(password) && /\d/.test(password),
+        hasSpecialCharacter: /[^A-Za-z0-9]/.test(password)
+    };
+}
+
+function validateRegistrationPassword(password) {
+    var checklist = getPasswordChecklist(password);
+
+    if (password.length > 64) {
+        return "Password must not exceed 64 characters.";
+    }
+
+    if (!checklist.hasMinimumLength || !checklist.hasLetterAndNumber) {
+        return "Password must be at least 8 characters and include both letters and numbers.";
+    }
+
+    if (!checklist.hasSpecialCharacter) {
+        return "Password must include at least one special character.";
+    }
+
+    return "";
+}
+
 function isSuccessfulTextResponse(responseText, allowedValues) {
     var normalized = (responseText || "").toString().trim().toLowerCase();
     return allowedValues.indexOf(normalized) !== -1;
@@ -296,8 +322,9 @@ function registerFunc(form) {
         return;
     }
 
-    if (password.length < 6) {
-        Swal.fire("Invalid Input", "Password must be at least 6 characters.", "error");
+    var passwordError = validateRegistrationPassword(password);
+    if (passwordError) {
+        Swal.fire("Invalid Input", passwordError, "error");
         return;
     }
 

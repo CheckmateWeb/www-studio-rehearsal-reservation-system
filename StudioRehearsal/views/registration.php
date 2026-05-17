@@ -75,7 +75,18 @@ if (isset($_SESSION['user_id'])) {
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" autocomplete="new-password" placeholder="Create a secure password" required>
+                        <input type="password" id="password" name="password" maxlength="64" autocomplete="new-password" placeholder="Create a secure password" required>
+                        <div class="password-guide" id="passwordGuide" aria-live="polite">
+                            <p class="password-guide-title">Password guide</p>
+                            <div class="password-rule" id="passwordRuleIdentifiers">
+                                <span class="password-rule-indicator" aria-hidden="true"></span>
+                                <span>8 to 64 characters and includes both a letter and a number</span>
+                            </div>
+                            <div class="password-rule" id="passwordRuleSpecial">
+                                <span class="password-rule-indicator" aria-hidden="true"></span>
+                                <span>Includes at least one special character like @, #, $, or %</span>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn">Create Account</button>
@@ -103,6 +114,24 @@ if (isset($_SESSION['user_id'])) {
 <script src="../scripts/service.js"></script>
 
 <script>
+function updatePasswordGuide() {
+    const passwordInput = document.getElementById('password');
+    const passwordValue = passwordInput.value;
+    const checklist = getPasswordChecklist(passwordValue);
+
+    document.getElementById('passwordRuleIdentifiers').classList.toggle(
+        'is-valid',
+        checklist.hasMinimumLength && checklist.hasLetterAndNumber
+    );
+    document.getElementById('passwordRuleSpecial').classList.toggle(
+        'is-valid',
+        checklist.hasSpecialCharacter
+    );
+}
+
+document.getElementById('password').addEventListener('input', updatePasswordGuide);
+updatePasswordGuide();
+
 $('#regForm').submit(function(e){
     e.preventDefault();
     registerFunc(this);
