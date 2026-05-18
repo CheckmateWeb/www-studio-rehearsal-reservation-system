@@ -62,12 +62,12 @@ if (isset($_SESSION['user_id'])) {
                 <form id="loginForm">
                     <div class="input-field">
                         <label for="email">Email</label>
-                        <input id="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+                        <input id="email" type="email" autocomplete="email" inputmode="email" maxlength="50" placeholder="you@example.com" required>
                     </div>
 
                     <div class="input-field">
                         <label for="password">Password</label>
-                        <input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+                        <input id="password" type="password" autocomplete="current-password" maxlength="64" placeholder="Enter your password" required>
                     </div>
 
                     <button type="submit" class="btn">
@@ -99,6 +99,21 @@ if (isset($_SESSION['user_id'])) {
 <script src="../scripts/service.js"></script>
 
 <script>
+    (function () {
+        var emailInput = document.getElementById('email');
+        var passwordInput = document.getElementById('password');
+
+        emailInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\s+/g, '').slice(0, 50);
+        });
+
+        passwordInput.addEventListener('input', function () {
+            if (this.value.length > 64) {
+                this.value = this.value.slice(0, 64);
+            }
+        });
+    }());
+
     $('#loginForm').submit(function(e){
         e.preventDefault();
         loginFunc();

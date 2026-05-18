@@ -20,6 +20,20 @@ $respondText = static function ($message) {
     exit();
 };
 
+$isValidEmailAddress = static function ($email) {
+    if (!is_string($email)) {
+        return false;
+    }
+
+    $email = trim($email);
+
+    if (strlen($email) < 5 || strlen($email) > 50) {
+        return false;
+    }
+
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+};
+
 $isValidRegistrationPassword = static function ($password) {
     if (!is_string($password)) {
         return false;
@@ -44,13 +58,13 @@ if ($action === 'login') {
     ob_clean();
     header('Content-Type: application/json; charset=utf-8');
 
-    $email = filter_var($postString('email'), FILTER_VALIDATE_EMAIL);
+    $email = $postString('email');
     $password = (string) ($_POST['password'] ?? '');
 
-    if (!$email || $password === '') {
+    if (!$isValidEmailAddress($email) || $password === '' || strlen($password) > 64) {
         echo json_encode([
             "success" => false,
-            "message" => "Email and password are required"
+            "message" => "Email or password is invalid"
         ]);
         exit();
     }
@@ -64,10 +78,10 @@ if ($action === 'register') {
 
     $f = $postString('fName');
     $l = $postString('lName');
-    $e = filter_var($postString('email'), FILTER_VALIDATE_EMAIL);
+    $e = $postString('email');
     $p = (string) ($_POST['password'] ?? '');
 
-    if ($f === '' || $l === '' || !$e || $p === '') {
+    if ($f === '' || $l === '' || !$isValidEmailAddress($e) || $p === '') {
         $respondText("Invalid input");
     }
 
