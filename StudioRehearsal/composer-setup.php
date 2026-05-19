@@ -22,12 +22,16 @@ function setupEnvironment()
 {
     ini_set('display_errors', 1);
 
-    if (extension_loaded('uopz') && !(ini_get('uopz.disable') || ini_get('uopz.exit'))) {
-        // uopz works at opcode level and disables exit calls
+    if (extension_loaded('uopz')) {
+
+        if (ini_get('uopz.disable') || ini_get('uopz.exit')) {
+            throw new RuntimeException(
+                'The uopz extension ignores exit calls and breaks this installer.'
+            );
+        }
+
         if (function_exists('uopz_allow_exit')) {
-            @uopz_allow_exit(true);
-        } else {
-            throw new RuntimeException('The uopz extension ignores exit calls and breaks this installer.');
+            uopz_allow_exit(true);
         }
     }
 
@@ -41,7 +45,6 @@ function setupEnvironment()
 
     define('COMPOSER_INSTALLER', $installer);
 }
-
 /**
  * Processes the installer
  */
