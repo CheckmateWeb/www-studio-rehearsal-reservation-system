@@ -13,6 +13,12 @@ $reservations = $manager->getAllReservations();
 $statuses = $manager->getAllStatuses();
 
 $totalUsers = count($users);
+$usersPerPage = 8;
+$totalUserPages = max(1, (int) ceil($totalUsers / $usersPerPage));
+$currentUserPage = filter_var($_GET['user_page'] ?? 1, FILTER_VALIDATE_INT);
+$currentUserPage = $currentUserPage === false ? 1 : max(1, min($currentUserPage, $totalUserPages));
+$userOffset = ($currentUserPage - 1) * $usersPerPage;
+$paginatedUsers = array_slice($users, $userOffset, $usersPerPage);
 $totalReservations = count($reservations);
 $totalRevenue = array_sum(array_column($reservations, 'total_amount'));
 
@@ -234,6 +240,9 @@ $occupancyRate = $totalWeeklyCapacityHours > 0
                         <h2 class="section-title">User Management</h2>
                         <p class="section-note">Update or remove registered accounts while keeping the existing popup confirmations.</p>
                     </div>
+                    <p class="section-note pagination-summary">
+                        Showing <?= $totalUsers > 0 ? $userOffset + 1 : 0 ?> to <?= min($userOffset + $usersPerPage, $totalUsers) ?> of <?= $totalUsers ?> users
+                    </p>
                 </div>
 
                 <div class="table-panel">
@@ -251,8 +260,8 @@ $occupancyRate = $totalWeeklyCapacityHours > 0
                             </thead>
 
                             <tbody>
-                                <?php if (!empty($users)): ?>
-                                    <?php foreach ($users as $user): ?>
+                                <?php if (!empty($paginatedUsers)): ?>
+                                    <?php foreach ($paginatedUsers as $user): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($user['user_id']) ?></td>
                                             <td><?= htmlspecialchars($user['firstName'] . ' ' . $user['lastName']) ?></td>
@@ -286,6 +295,46 @@ $occupancyRate = $totalWeeklyCapacityHours > 0
                             </tbody>
                         </table>
                     </div>
+
+                    <?php if ($totalUserPages > 1): ?>
+                        <div class="pagination-bar" aria-label="User management pagination">
+                            <?php
+                            $buildUserPageUrl = static function ($page) {
+                                $query = $_GET;
+                                $query['user_page'] = $page;
+                                return '?' . http_build_query($query);
+                            };
+                            ?>
+
+                            <a
+                                class="pagination-link <?= $currentUserPage <= 1 ? 'is-disabled' : '' ?>"
+                                href="<?= $currentUserPage <= 1 ? '#' : htmlspecialchars($buildUserPageUrl($currentUserPage - 1)) ?>"
+                                <?= $currentUserPage <= 1 ? 'aria-disabled="true" tabindex="-1"' : '' ?>
+                            >
+                                Previous
+                            </a>
+
+                            <div class="pagination-pages">
+                                <?php for ($page = 1; $page <= $totalUserPages; $page++): ?>
+                                    <a
+                                        class="pagination-link <?= $page === $currentUserPage ? 'is-active' : '' ?>"
+                                        href="<?= htmlspecialchars($buildUserPageUrl($page)) ?>"
+                                        <?= $page === $currentUserPage ? 'aria-current="page"' : '' ?>
+                                    >
+                                        <?= $page ?>
+                                    </a>
+                                <?php endfor; ?>
+                            </div>
+
+                            <a
+                                class="pagination-link <?= $currentUserPage >= $totalUserPages ? 'is-disabled' : '' ?>"
+                                href="<?= $currentUserPage >= $totalUserPages ? '#' : htmlspecialchars($buildUserPageUrl($currentUserPage + 1)) ?>"
+                                <?= $currentUserPage >= $totalUserPages ? 'aria-disabled="true" tabindex="-1"' : '' ?>
+                            >
+                                Next
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
