@@ -4,6 +4,7 @@ require_once __DIR__ . "/../bl/user_manager.php";
 require_once __DIR__ . "/../model/databaseCon.php";
 require_once __DIR__ . '/../helper/send.php';
 
+$mailConfig = require __DIR__ . '/../config/mail.php';
 $manager = new UserManager();
 $action = $_POST['action'] ?? '';
 
@@ -169,8 +170,8 @@ if ($action === 'register') {
         </div>';
 
         sendEmail(
-            "adventureprofile2@gmail.com",
-            "Admin",
+            $mailConfig['admin_email'],
+            $mailConfig['admin_name'],
             "New User Registration",
             $adminBody
         );

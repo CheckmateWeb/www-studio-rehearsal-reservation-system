@@ -7,7 +7,9 @@ return [
     'port' => 587,
     'encryption' => 'tls',
     'from_email' => 'adventureprofile2@gmail.com',
-    'from_name' => 'Studio Rehearsal'
+    'from_name' => 'Studio Rehearsal',
+    'admin_email' => 'adventureprofile2@gmail.com',
+    'admin_name' => 'Admin'
 ];
 
 ?>
