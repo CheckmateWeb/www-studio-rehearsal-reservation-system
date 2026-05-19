@@ -75,12 +75,16 @@ if (isset($_SESSION['user_id'])) {
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" maxlength="64" autocomplete="new-password" placeholder="Create a secure password" required>
+                        <input type="password" id="password" name="password" minlength="8" maxlength="64" autocomplete="new-password" placeholder="Create a secure password" required>
                         <div class="password-guide" id="passwordGuide" aria-live="polite">
                             <p class="password-guide-title">Password guide</p>
+                            <div class="password-rule" id="passwordRuleLength">
+                                <span class="password-rule-indicator" aria-hidden="true"></span>
+                                <span>Minimum 8 characters</span>
+                            </div>
                             <div class="password-rule" id="passwordRuleIdentifiers">
                                 <span class="password-rule-indicator" aria-hidden="true"></span>
-                                <span>8 to 64 characters and includes both a letter and a number</span>
+                                <span>Includes both a letter and a number</span>
                             </div>
                             <div class="password-rule" id="passwordRuleSpecial">
                                 <span class="password-rule-indicator" aria-hidden="true"></span>
@@ -119,9 +123,13 @@ function updatePasswordGuide() {
     const passwordValue = passwordInput.value;
     const checklist = getPasswordChecklist(passwordValue);
 
+    document.getElementById('passwordRuleLength').classList.toggle(
+        'is-valid',
+        checklist.hasMinimumLength
+    );
     document.getElementById('passwordRuleIdentifiers').classList.toggle(
         'is-valid',
-        checklist.hasMinimumLength && checklist.hasLetterAndNumber
+        checklist.hasLetterAndNumber
     );
     document.getElementById('passwordRuleSpecial').classList.toggle(
         'is-valid',
